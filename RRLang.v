@@ -11,12 +11,16 @@ Inductive ValueTypes :=
 | vn : nat -> ValueTypes 
 | vb : bool -> ValueTypes
 | vs : string -> ValueTypes
+| fn : nat -> ValueTypes
+| fb : bool -> ValueTypes
+| fs : string -> ValueTypes
 | empty : ValueTypes.
 
 Scheme Equality for ValueTypes.
 
 Inductive AExp:=
 | avar : string -> AExp
+| favar : string -> AExp
 | anum : nat -> AExp
 | aplus : AExp -> AExp -> AExp
 | amul : AExp -> AExp -> AExp
@@ -30,8 +34,10 @@ Notation "A *' B" := (amul A B)(at level 58, left associativity).
 Notation "A /' B" := (afrac A B)(at level 58, left associativity).
 Notation "A %' B" := (amod A B)(at level 58, left associativity).
 
+
 Inductive StrExp :=
 | strvar : string -> StrExp
+| strfvar : string -> StrExp
 | strconc : StrExp -> StrExp -> StrExp.
 
 
@@ -39,6 +45,7 @@ Notation "S <strcat> S'" := (strconc S S')(at level 70).
 
 Inductive BExp :=
 | boolvar : string -> BExp
+| boolfvar : string -> BExp
 | btrue : BExp
 | bfalse : BExp
 | bnot : BExp -> BExp
@@ -62,6 +69,20 @@ Coercion anum : nat >-> AExp.
 Coercion boolvar : string >-> BExp.
 Coercion strvar : string >-> StrExp.
 
+Check "X" +' "Y".
+Check "X" +' 2.
+Check "X" -' "Y".
+Check "X" -' 10.
+Check "X" *' "Y".
+Check 2 *' "A".
+Check 2 <=' 3.
+Check 2 >=' "Y".
+Check ! "X".
+Check "A" and' btrue.
+Check bfalse or' "B".
+Check "A" eq?' "B".
+Check strvar "X".
+Check "X" <strcat> "Y".
 
 Definition Env := string -> ValueTypes.
 (* adaugat de aici *)
@@ -83,11 +104,54 @@ Definition update_str (env : Env)
               then vs value
               else (env var').
 
+Definition update_fnat (env : Env)
+           (var : string) (value : nat) : Env :=
+  fun var' => if (string_eq_dec var' var)
+              then fn value
+              else (env var').
+
+Definition update_fbool (env : Env)
+           (var : string) (value : bool) : Env :=
+  fun var' => if (string_eq_dec var' var)
+              then fb value
+              else (env var').
+
+Definition update_fstr (env : Env)
+                      (var : string) (value : string) : Env :=
+  fun var' => if(string_eq_dec var' var)
+              then fs value
+              else (env var').
+
+Definition env0 : Env :=
+    fun v => if(string_beq v "placeholdervar")
+             then vn 0
+             else if(string_beq v "booltrue")
+             then vb true
+             else if(string_beq v "boolfalse")
+             then vb false
+             else if(string_beq v "emptystring")
+             then vs ""
+             else empty.
+
+Definition env1 : Env :=
+  fun v => if(string_beq v "s")
+           then vs "hello"
+           else if(string_beq v "n")
+           then vn 10
+           else if(string_beq v "b")
+           then vb true
+           else empty.
+
+
 Reserved Notation "A =[ S ]=> N" (at level 61).
 Inductive aeval : AExp -> Env -> nat -> Prop :=
 | const : forall n sigma, anum n =[ sigma ]=> n
 | var : forall v sigma, avar v =[ sigma ]=> match (sigma v) with
                                             | vn var => var
+                                            | _ => 0
+                                            end
+| fvar: forall v sigma, favar v =[ sigma ]=> match (sigma v) with
+                                            | fn var => var
                                             | _ => 0
                                             end
 | add : forall a1 a2 i1 i2 sigma n,
@@ -121,13 +185,16 @@ Inductive aeval : AExp -> Env -> nat -> Prop :=
 
 where "a =[ sigma ]=> n" := (aeval a sigma n).
 
-
 Reserved Notation "A ~{ S }=> B" (at level 75).
 Inductive streval : StrExp -> Env -> string -> Prop :=
 | s_const : forall s sigma, (strvar s) ~{ sigma }=> match (sigma s) with
                                                   | vs s => s
                                                   | _ => ""
                                                  end
+| s_fconst : forall s sigma, (strfvar s) ~{ sigma }=> match (sigma s) with
+                                                      | fs s => s
+                                                      | _ => ""
+                                                      end
 | s_conc : forall s s1 s2 sigma a1 a2,
          a1 ~{ sigma }=> s1 ->
          a2 ~{ sigma }=> s2 ->
@@ -143,6 +210,10 @@ Inductive beval : BExp -> Env -> bool -> Prop :=
                                                    | vb b => b
                                                    | _ => true
                                                    end
+| e_fconst : forall b sigma, boolfvar b ={ sigma }=> match (sigma b) with
+                                                     | fb b => b
+                                                     | _ => true
+                                                     end
 | e_true : forall sigma, btrue ={ sigma }=> true
 | e_false : forall sigma, bfalse ={ sigma }=> false
 | e_lessthan : forall a1 a2 i1 i2 sigma b,
@@ -183,7 +254,13 @@ Inductive Stmt :=
 | ifthen : BExp -> Stmt -> Stmt
 | ifthenelse : BExp -> Stmt -> Stmt -> Stmt
 | foor : Stmt -> BExp -> Stmt -> Stmt -> Stmt
-| funct : string -> list Stmt -> Stmt -> Stmt.
+.
+Inductive FStmt :=
+| declareFN : AExp -> FStmt
+| declareFB : BExp -> FStmt
+| declareFS : StrExp -> FStmt
+| funct : string -> list FStmt -> Stmt -> FStmt.
+
 
 Notation "<int> X" := (declareN X)(at level 50).
 Notation "<boolean> B" := (declareB B)(at level 50).
@@ -196,6 +273,11 @@ Notation "'If' ( B ) 'Then' S" := (ifthen B S)(at level 60).
 Notation "'If' ( B ) 'Then' S1 'Else' S2" := (ifthenelse B S1 S2)(at level 61).
 Notation "'While' ( B ) 'do' S" := (while B S)(at level 60).
 Notation "'For' ( I1 ';' B ';' It ) 'do' S" := (foor I1 B It S)(at level 60).
+Notation "<fint> X" := (declareFN X)(at level 50).
+Notation "<fboolean> B" := (declareFB B)(at level 50).
+Notation "<fstring> S" := (declareFS S)(at level 50).
+
+Check funct "main" [ <fint> "X" ] ( <int> "Y" ).
 
 
 
@@ -253,7 +335,40 @@ Inductive eval_st : Stmt -> Env -> Env -> Prop :=
 | e_for : forall i1 b sigma sigma' it seq,
   (i1 ;; (while b (seq ;; it) ) ) -{ sigma }-> sigma' ->
   (foor i1 b it seq) -{ sigma }-> sigma'
+| e_breakfirst : forall s1 s2 sigma,
+   s1 -{ sigma }-> sigma ->
+   s2 -{ sigma }-> sigma ->
+   (s1 ;; s2) -{ sigma }-> sigma.
+| e_breaklater : forall s1 s2 sigma sigma'
+   s1 -{ sigma }-> sigma' ->
+   s2 -{ sigma' }-> sigma' ->
+   (s1 ;; s2) -{ sigma }-> sigma'
+| e_break : forall s sigma,
+   s -{ sigma }-> sigma.
+| e_continue : forall s1 s2 sigma' sigma,
+   s1 -{ sigma }-> sigma ->
+   s2 -{ sigma }-> sigma' ->
+   (s1 ;; s2) -{ sigma }-> sigma'
+| e_whilebreak : forall b s sigma,
+    b ={ sigma }=> true ->
+    ( break ;; while b s) -{ sigma }-> sigma ->
+    while b s -{ sigma }-> sigma
+
 where "s -{ sigma }-> sigma'" := (eval_st s sigma sigma'). 
+
+Reserved Notation "S >{ sigma }-> sigma'" (at level 60).
+
+Inductive eval_fst: FStmt -> Env -> Env -> Prop :=
+| e_declareFN: forall x sigma sigma',
+  sigma' = (update_fnat sigma x 0) ->
+  (<fint> x) >{ sigma }-> sigma'
+| e_declareFB: forall b sigma sigma',
+  sigma' = (update_fbool sigma b true) ->
+  (<fboolean> b) >{ sigma }-> sigma'
+| e_declareFS: forall s sigma sigma',
+  sigma' = (update_fstr sigma s "") ->
+  (<fstring> s) >{ sigma }-> sigma'
+where "S >{ sigma }-> sigma'" := (eval_fst S sigma sigma').
 
 Inductive RegExp :=
 | gol : RegExp
@@ -282,6 +397,7 @@ Inductive vectorExp :=
 | pop_back_bool: vector_bool -> vectorExp
 | pop_back_string: vector_string -> vectorExp
 | pop_back_all: vector_all -> vectorExp.
+  
 
 Inductive Memory :=
 | memory_default : Memory
@@ -297,6 +413,3 @@ Inductive Config :=
      Stack: stack 
   *)
   | config : nat -> Envr -> MemoryLayer -> Stack -> Config.
-
-
-
