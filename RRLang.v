@@ -133,7 +133,7 @@ Definition env0 : Env :=
              then vs ""
              else empty.
 
-Definition env1 : Env :=
+Definition env2 : Env :=
   fun v => if(string_beq v "s")
            then vs "hello"
            else if(string_beq v "n")
@@ -338,17 +338,19 @@ Inductive eval_st : Stmt -> Env -> Env -> Prop :=
 | e_breakfirst : forall s1 s2 sigma,
    s1 -{ sigma }-> sigma ->
    s2 -{ sigma }-> sigma ->
-   (s1 ;; s2) -{ sigma }-> sigma.
-| e_breaklater : forall s1 s2 sigma sigma'
+   (s1 ;; s2) -{ sigma }-> sigma
+| e_breaklater : forall s1 s2 sigma sigma',
    s1 -{ sigma }-> sigma' ->
    s2 -{ sigma' }-> sigma' ->
    (s1 ;; s2) -{ sigma }-> sigma'
 | e_break : forall s sigma,
-   s -{ sigma }-> sigma.
-| e_continue : forall s1 s2 sigma' sigma,
+   s -{ sigma }-> sigma
+| e_continueseq : forall s1 s2 sigma' sigma,
    s1 -{ sigma }-> sigma ->
    s2 -{ sigma }-> sigma' ->
    (s1 ;; s2) -{ sigma }-> sigma'
+| e_continue : forall s sigma,
+   s -{ sigma }-> sigma
 | e_whilebreak : forall b s sigma,
     b ={ sigma }=> true ->
     ( break ;; while b s) -{ sigma }-> sigma ->
@@ -370,6 +372,216 @@ Inductive eval_fst: FStmt -> Env -> Env -> Prop :=
   (<fstring> s) >{ sigma }-> sigma'
 where "S >{ sigma }-> sigma'" := (eval_fst S sigma sigma').
 
+
+Definition env1 : Env :=
+    fun v => if(string_beq v "a")
+             then vn 5
+             else if(string_beq v "b")
+             then vn 2
+             else empty.
+
+Example eval_decN: <int> "x" -{ env0 }-> (update_nat env0 "x" 0).
+Proof.
+   eapply e_declareN. reflexivity.
+Qed.
+
+Example eval_decB: <boolean> "ok" -{ env0 }-> (update_bool env0 "ok" true).
+Proof.
+   eapply e_declareB. reflexivity.
+Qed.
+
+Example eval_assigNat: ("y" <int>::= "a") -{ env1 }-> (update_nat env1 "y" 5).
+Proof.
+   eapply e_assignmentN.
+   - apply var.
+   - auto.
+Qed.
+
+Example eval_assigBool: ("okay" <boolean>::= bfalse) -{ env0 }-> (update_bool env0 "okay" false).
+Proof.
+   eapply e_assignmentB.
+   - eapply e_false.
+   - reflexivity.
+Qed.
+
+(* verificare seq *)
+Check (<int> "ana" ;; <boolean> "okay").
+Check (<int> "x" ;; "x" <int>::= 10 ;; <boolean> "notok" ;; "notok" <boolean>::= bfalse).
+(* aici nu am stiut cum sa fac acel bfalse sa fie false, adica sa pot scrie direct false,
+ce am incercat a complicat mult si nu am reusit sa continui si am lasat asa.., dar in 
+env el este false*)
+
+Example eval_whileF: while ("a" <=' 4) ("var" <int>::= 10) -{ env1 }-> env1.
+Proof.
+  eapply e_whilefalse.
+  eapply e_lessthan.
+  - apply var.
+  - apply const.
+  - auto.
+Qed.
+
+Example eval_whileT: exists sigma, while("a" <=' 5) ("a" <int>::= 6) -{ env1 }-> sigma /\ sigma "a" = vn 6.
+Proof.
+    eexists.
+    split.
+    - eapply e_whiletrue.
+      + eapply e_lessthan.
+        ++ apply var.
+        ++ apply const.
+        ++ auto.
+      + eapply e_seq.
+        ++ eapply e_assignmentN.
+           ** eapply const.
+           ** auto.
+        ++ eapply e_whilefalse.
+           ** eapply e_lessthan.
+              * eapply var.
+              * eapply const.
+              * auto.
+    - auto.
+Qed.
+
+Example eval_ifthentrue: exists sigma, ifthen ("a" <=' 4) ("x" <int>::= 20) -{ env0 }-> sigma /\ sigma "x" = vn 20.
+Proof.
+    eexists.
+    split.
+    - eapply e_ifthentrue.
+      + eapply e_lessthan.
+        * eapply var.
+        * eapply const.
+        * auto.
+      + eapply e_assignmentN.
+        * eapply const.
+        * reflexivity.
+    - auto.
+Qed.
+
+Example eval_ifthenfalse: ifthen ("a" <=' 1) ("oke" <boolean>::= bfalse) -{ env1 }-> env1.
+Proof.
+   eapply e_ifthenfalse.
+   eapply e_lessthan.
+   - eapply var.
+   - eapply const.
+   - simpl. reflexivity.
+Qed.
+
+Example eval_ifthenelsetrue : ifthenelse ("a" <=' 4) ("rr" <int>::= 4) ("rr" <int>::= ("rr" -' 1)) -{ env0 }-> update_nat env0 "rr" 4.
+Proof.
+    eapply e_iftrue.
+    eapply e_lessthan.
+    - apply var.
+    - apply const.
+    - simpl. reflexivity.
+    - eapply e_assignmentN.
+      + eapply const.
+      + reflexivity.
+Qed.
+
+Example eval_ifthenelsefalse : ifthenelse ("rr" +' 5 <=' 4 ) ("rr" <int>::= 4) ("rr" <int>::= 20) -{ env0 }-> update_nat env0 "rr" 20.
+Proof.
+    eapply e_iffalse.
+    eapply e_lessthan.
+    - eapply add.
+      + apply var.
+      + apply const.
+      + simpl. reflexivity.
+    - apply const.
+    - simpl. reflexivity.
+    - eapply e_assignmentN.
+      + apply const.
+      + reflexivity.
+    
+Qed.
+
+Example eval_for: exists sigma, foor ("a" <int>::= 0) ("a" <=' 0) ("a" <int>::= ("a" +' 1))("rr" <int>::= ("a" +' 1)) -{ env0 }-> sigma /\ sigma "a" = vn 1 /\ sigma "rr" = vn 1.
+Proof.
+    eexists.
+    split.
+    - eapply e_for.
+      eapply e_seq.
+      * eapply e_assignmentN.
+        ** eapply const.
+        ** auto.
+      * eapply e_whiletrue.
+        ** eapply e_lessthan.
+          + eapply var.
+          + eapply const.
+         + auto.
+       ** eapply e_seq.
+         + eapply e_seq.
+           ++ eapply e_assignmentN.
+              +++ eapply add.
+                  ++++ eapply var.
+                  ++++ eapply const.
+                  ++++ auto.
+              +++ auto.
+           ++ eapply e_assignmentN.
+              +++ eapply add.
+                  ++++ eapply var.
+                  ++++ eapply const.
+                  ++++ auto.
+              +++ auto.
+         + eapply e_whilefalse.
+           eapply e_lessthan.
+           ++ eapply var.
+           ++ eapply const.
+           ++ auto.
+    - auto.
+Qed.
+
+Check
+  "n" <int>::= 10 ;;
+  <int> "i";;
+  "sum" <int>::= 0 ;; 
+  
+  While ( "i" <=' "n" ) do (
+          "sum" <int>::= ("sum" +' "i") ;;
+          "i" <int>::= ("i" +' 1)
+  );;
+  If("sum" <=' 60)
+    Then "n" <int>::= (("sum" %' "n") +' 1)
+    Else "n" <int>::= (("sum" *' "n") /' 5) 
+.
+
+Check
+  "x" <boolean>::= btrue;;
+  "y" <int>::= 20;;
+  <int> "i";;
+  For ( "i" <int>::= 0 ; "i" <=' 1 ; "i" <int>::= ("i" +' 1) ) do
+      "y" <int>::= ( "y" +' "y" )
+.
+Compute env1 "a".
+Example eval_break : exists sigma, while("a" <=' 10) ("a" <int>::= ("a" +' 2);; break) -{ env1 }-> sigma /\ sigma "a" = vn 7.
+Proof.
+  eexists.
+  split.
+  - eapply e_whiletrue.
+    + eapply e_lessthan.
+      ++ eapply var.
+      ++ eapply const.
+      ++ eauto.
+    + eapply e_seq.
+      ++ eapply e_seq.
+        +++ eapply e_assignmentN; eauto. eapply add; eauto. eapply var. eapply const.
+        +++ unfold update_nat. eapply e_break.
+      ++ eapply e_whiletrue; simpl.
+        +++ eapply e_lessthan. eapply var. eapply const. eauto.
+        +++ eapply e_break.
+  - eauto.
+Qed.
+
+Example eval_continue: exists sigma, ifthenelse ("a" <=' 10) continue ("a" <int>::= ("a" +' 2)) -{ env1 }-> sigma /\ sigma "a" = vn 5.
+Proof.
+  eexists.
+  split.
+  - eapply e_iftrue.
+    + eapply e_lessthan.
+      ++ eapply var.
+      ++ eapply const.
+      ++ eauto.
+    + eapply e_continue.
+  - eauto.
+Qed.
 Inductive RegExp :=
 | gol : RegExp
 | eps : RegExp
@@ -382,22 +594,6 @@ Inductive RegExp :=
 Notation "a <.> b" := (conc a b) (at level 80).
 Notation "a || b" := (oor a b).
 
-
-Definition vector_nat := string -> nat.
-Definition vector_bool := string -> bool.
-Definition vector_string := string -> string.
-Definition vector_all := string -> ValueTypes.
-
-Inductive vectorExp :=
-| push_nat: vector_nat -> nat -> vectorExp
-| push_bool: vector_bool -> bool -> vectorExp
-| push_string: vector_string -> string -> vectorExp
-| push_all: vector_all -> ValueTypes -> vectorExp
-| pop_back_nat: vector_nat -> vectorExp
-| pop_back_bool: vector_bool -> vectorExp
-| pop_back_string: vector_string -> vectorExp
-| pop_back_all: vector_all -> vectorExp.
-  
 
 Inductive Memory :=
 | memory_default : Memory
