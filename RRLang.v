@@ -594,6 +594,20 @@ Inductive RegExp :=
 Notation "a <.> b" := (conc a b) (at level 80).
 Notation "a || b" := (oor a b).
 
+Definition vector_nat := string -> nat.
+Definition vector_bool := string -> bool.
+Definition vector_string := string -> string.
+Definition vector_all := string -> ValueTypes.
+
+Inductive vectorExp :=
+| push_nat: vector_nat -> nat -> vectorExp
+| push_bool: vector_bool -> bool -> vectorExp
+| push_string: vector_string -> string -> vectorExp
+| push_all: vector_all -> ValueTypes -> vectorExp
+| pop_back_nat: vector_nat -> vectorExp
+| pop_back_bool: vector_bool -> vectorExp
+| pop_back_string: vector_string -> vectorExp
+| pop_back_all: vector_all -> vectorExp.
 
 Inductive Memory :=
 | memory_default : Memory
