@@ -594,10 +594,10 @@ Inductive RegExp :=
 Notation "a <.> b" := (conc a b) (at level 80).
 Notation "a || b" := (oor a b).
 
-Definition vector_nat := string -> nat.
-Definition vector_bool := string -> bool.
-Definition vector_string := string -> string.
-Definition vector_all := string -> ValueTypes.
+Definition vector_nat := string -> list nat.
+Definition vector_bool := string -> list bool.
+Definition vector_string := string -> list string.
+Definition vector_all := string -> list ValueTypes.
 
 Inductive vectorExp :=
 | push_nat: vector_nat -> nat -> vectorExp
