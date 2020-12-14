@@ -84,6 +84,52 @@ Check "A" eq?' "B".
 Check strvar "X".
 Check "X" <strcat> "Y".
 
+Inductive vector :=
+| vector_nat : string -> list nat -> vector
+| vector_bool : string -> list bool -> vector
+| vector_str : string -> list string -> vector
+| vector_all : string -> list ValueTypes -> vector.
+
+Notation "X [int]::= L" := (vector_nat X L) (at level 40).
+Notation "X [boolean]::= L" := (vector_bool X L) (at level 40).
+Notation "X [str]::= L" := (vector_str X L)(at level 40).
+Notation "X [all]::= L" := (vector_all X L) (at level 40).
+Check "vec" [int]::= [1;2;3].
+Check "vec" [boolean]::= [true;false;false].
+Check "vec" [str]::= ["a";"b";"c"].
+Check "vec" [all]::= [vs "a";vn 2;vb true].
+
+(*Definition vector_n := string -> list nat.
+Definition vector_b := string -> list bool.
+Definition vector_s := string -> list string.
+Definition vector_a := string -> list ValueTypes.
+
+Inductive vectorExp :=
+| push_nat: vector_nat -> nat -> vectorExp
+| push_bool: vector_bool -> bool -> vectorExp
+| push_string: vector_string -> string -> vectorExp
+| push_all: vector_all -> ValueTypes -> vectorExp
+| pop_back_nat: vector_nat -> vectorExp
+| pop_back_bool: vector_bool -> vectorExp
+| pop_back_string: vector_string -> vectorExp
+| pop_back_all: vector_all -> vectorExp.
+*)
+
+Inductive vectorExp :=
+| vec_natelem : string -> nat -> vectorExp
+| vec_n : string -> list AExp -> vectorExp
+| vec_booleanelem : string -> bool -> vectorExp
+| vec_b : string -> list bool -> vectorExp
+| vec_strelem : string -> list string -> vectorExp
+| vec_s : string -> string -> vectorExp
+| push_nat : vectorExp -> nat -> vectorExp
+| push_bool : vectorExp -> bool -> vectorExp
+| push_string : vectorExp -> string -> vectorExp
+| pop_back_nat : vectorExp -> vectorExp
+| pop_back_boolean : vectorExp -> vectorExp
+| pop_back_string: vectorExp -> vectorExp.
+
+
 Definition Env := string -> ValueTypes.
 (* adaugat de aici *)
 Definition update_nat (env : Env)
@@ -244,9 +290,15 @@ Inductive Stmt :=
 | declareN : AExp -> Stmt
 | declareB : BExp -> Stmt
 | declareS : StrExp -> Stmt
+| declareVecN : string -> Stmt
+| declareVecB : string -> Stmt
+| declareVecS : string -> Stmt
 | assignmentN : AExp -> AExp -> Stmt
 | assignmentB : BExp -> BExp -> Stmt
 | assignmentS : StrExp -> StrExp -> Stmt
+| assignmentVecN : string -> list nat -> Stmt
+| assignmentVecB : string -> list bool -> Stmt
+| assignmentVecS : string -> list string -> Stmt
 | sequence : Stmt -> Stmt -> Stmt
 | while : BExp -> Stmt -> Stmt
 | break : Stmt
@@ -593,22 +645,12 @@ Inductive RegExp :=
 
 Notation "a <.> b" := (conc a b) (at level 80).
 Notation "a || b" := (oor a b).
-
-Definition vector_nat := string -> list nat.
-Definition vector_bool := string -> list bool.
-Definition vector_string := string -> list string.
-Definition vector_all := string -> list ValueTypes.
-
-Inductive vectorExp :=
-| push_nat: vector_nat -> nat -> vectorExp
-| push_bool: vector_bool -> bool -> vectorExp
-| push_string: vector_string -> string -> vectorExp
-| push_all: vector_all -> ValueTypes -> vectorExp
-| pop_back_nat: vector_nat -> vectorExp
-| pop_back_bool: vector_bool -> vectorExp
-| pop_back_string: vector_string -> vectorExp
-| pop_back_all: vector_all -> vectorExp.
-
+(*Inductive Instruction :=
+| push_const : nat -> Instruction
+| push_var : string -> Instruction
+| add : Instruction
+| mul : Instruction.
+*)
 Inductive Memory :=
 | memory_default : Memory
 | offset : nat -> Memory.
@@ -616,6 +658,15 @@ Inductive Memory :=
 Definition Envr := string -> Memory.
 Definition MemoryLayer := Memory -> ValueTypes.
 Definition Stack := list Envr.
+
+(*Check ValueTypes.
+Inductive Sstack (t : Set) : Set :=
+| nill : Sstack t
+| SStack : t -> Sstack t -> Sstack t.
+Check Sstack ValueTypes.
+Check Sstack nat.
+Check nill nat.
+Check SStack bool true.*)
 Inductive Config :=
   (* nat: last memory zone
      Env: environment
@@ -623,3 +674,5 @@ Inductive Config :=
      Stack: stack 
   *)
   | config : nat -> Envr -> MemoryLayer -> Stack -> Config.
+
+
