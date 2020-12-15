@@ -666,7 +666,20 @@ Inductive Sstack (t : Set) : Set :=
 Check Sstack ValueTypes.
 Check Sstack nat.
 Check nill nat.
-Check SStack bool true.*)
+Check SStack bool true.
+
+Definition push_Sstack (t : Set)(S : Sstack t)(v : t) : Sstack t := (SStack t v S).
+Compute (push_Sstack bool (nill bool) true).
+Compute (push_Sstack nat (SStack nat 2(nill nat)) 2).
+Definition pop_Sstack (t : Set)(S : Sstack t) : Sstack t :=
+  match S with
+  | SStack _ v s => s
+  | nill _ => nill t
+  end.
+Compute pop_Sstack string (SStack string "helo" (SStack string "ok" (nill string))).
+Compute pop_Sstack bool (SStack bool true(nill bool)).
+*)
+
 Inductive Config :=
   (* nat: last memory zone
      Env: environment
@@ -674,5 +687,3 @@ Inductive Config :=
      Stack: stack 
   *)
   | config : nat -> Envr -> MemoryLayer -> Stack -> Config.
-
-
