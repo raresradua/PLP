@@ -7,6 +7,109 @@ Import ListNotations.
 Import Nat.
 
 
+Inductive Sstack (t : Set) : Set :=
+| nill : Sstack t
+| SStack : t -> Sstack t -> Sstack t.
+Check Sstack nat.
+Check nill nat.
+Check SStack bool true.
+
+
+Definition push_Sstack (t : Set)(S : Sstack t)(v : t) : Sstack t := (SStack t v S).
+Compute (push_Sstack bool (nill bool) true).
+Compute (push_Sstack nat (SStack nat 2(nill nat)) 2).
+Definition pop_Sstack (t : Set)(S : Sstack t) : Sstack t :=
+  match S with
+  | SStack _ v s => s
+  | nill _ => nill t
+  end.
+Compute pop_Sstack string (SStack string "helo" (SStack string "ok" (nill string))).
+Compute pop_Sstack bool (SStack bool true(nill bool)).
+
+(*
+Inductive vector :=
+| vector_nat : string -> list nat -> vector
+| vector_bool : string -> list bool -> vector
+| vector_str : string -> list string -> vector
+| vector_all : string -> list ValueTypes -> vector.
+
+Notation "X [int]::= L" := (vector_nat X L) (at level 40).
+Notation "X [boolean]::= L" := (vector_bool X L) (at level 40).
+Notation "X [str]::= L" := (vector_str X L)(at level 40).
+Notation "X [all]::= L" := (vector_all X L) (at level 40).
+Check "vec" [int]::= [1;2;3].
+Check "vec" [boolean]::= [true;false;false].
+Check "vec" [str]::= ["a";"b";"c"].
+Check "vec" [all]::= [vs "a";vn 2;vb true].
+Compute nth 2 [true].
+
+
+(*Definition vector_n := string -> list nat.
+Definition vector_b := string -> list bool.
+Definition vector_s := string -> list string.
+Definition vector_a := string -> list ValueTypes.
+
+Inductive vectorExp :=
+| push_nat: vector_nat -> nat -> vectorExp
+| push_bool: vector_bool -> bool -> vectorExp
+| push_string: vector_string -> string -> vectorExp
+| push_all: vector_all -> ValueTypes -> vectorExp
+| pop_back_nat: vector_nat -> vectorExp
+| pop_back_bool: vector_bool -> vectorExp
+| pop_back_string: vector_string -> vectorExp
+| pop_back_all: vector_all -> vectorExp.
+*)
+
+Inductive vectorExp :=
+| vec_natelem : string -> nat -> vectorExp
+| vec_n : string -> list nat -> vectorExp
+| vec_booleanelem : string -> bool -> vectorExp
+| vec_b : string -> list bool -> vectorExp
+| vec_strelem : string -> list string -> vectorExp
+| vec_s : string -> string -> vectorExp
+| push_nat : vectorExp -> nat -> vectorExp
+| push_bool : vectorExp -> bool -> vectorExp
+| push_string : vectorExp -> string -> vectorExp
+| pop_back_nat : vectorExp -> vectorExp
+| pop_back_boolean : vectorExp -> vectorExp
+| pop_back_string: vectorExp -> vectorExp.
+*)
+
+
+Definition vector_nat := list nat.
+Definition vector_bool := list bool.
+Definition vector_str := list string.
+(*
+Inductive VecExp :=
+| vec_n : vector_nat -> nat -> VecExp
+| vec_b : vector_bool -> bool -> VecExp
+| vec_s : vector_str -> string -> VecExp
+| push_back_nat : vector_nat -> nat -> VecExp
+| push_back_bool : vector_bool -> bool -> VecExp
+| push_back_str : vector_str -> string -> VecExp
+| push_front_nat : vector_nat -> nat -> VecExp
+| push_front_bool : vector_bool -> bool -> VecExp
+| push_front_str : vector_str -> string -> VecExp
+| pop_back_nat : vector_nat -> VecExp
+| pop_back_boolean : vector_bool -> VecExp
+| pop_back_string : vector_str -> VecExp.
+*)
+Definition indexNVec(vec : vector_nat) (n : nat) : nat := nth n vec 0. 
+Definition indexBVec(vec : vector_bool) (n : nat) : bool := nth n vec true. 
+Definition indexSVec(vec : vector_str) (n : nat) : string := nth n vec "". 
+
+Definition pb_nat (vec : vector_nat) (n : nat) : vector_nat := rev( n :: rev vec).
+Definition pb_bool (vec : vector_bool) (b : bool) : vector_bool := rev( b :: rev vec).
+Definition pb_str (vec : vector_str) (s : string) : vector_str := rev( s :: rev vec).
+
+Definition pf_nat (vec : vector_nat) (n : nat) : vector_nat := n :: vec.
+Definition pf_bool (vec : vector_bool) (b : bool) : vector_bool := b :: vec.
+Definition pf_str (vec : vector_str) (s : string) : vector_str := s :: vec.
+
+Definition pop_n (vec : vector_nat) : vector_nat := rev(removelast (rev vec)).
+Definition pop_b (vec : vector_bool) : vector_bool := rev(removelast (rev vec)).
+Definition pop_s (vec : vector_str) : vector_str := rev(removelast (rev vec)).
+
 Inductive ValueTypes :=
 | vn : nat -> ValueTypes 
 | vb : bool -> ValueTypes
@@ -14,9 +117,14 @@ Inductive ValueTypes :=
 | fn : nat -> ValueTypes
 | fb : bool -> ValueTypes
 | fs : string -> ValueTypes
+| sn : Sstack nat -> ValueTypes
+| sb : Sstack bool -> ValueTypes
+| ss : Sstack string -> ValueTypes
+| vvn : list nat -> ValueTypes
+| vvb : list bool -> ValueTypes
+| vvs : list string -> ValueTypes
 | empty : ValueTypes.
 
-Scheme Equality for ValueTypes.
 
 Inductive AExp:=
 | avar : string -> AExp
@@ -84,51 +192,6 @@ Check "A" eq?' "B".
 Check strvar "X".
 Check "X" <strcat> "Y".
 
-Inductive vector :=
-| vector_nat : string -> list nat -> vector
-| vector_bool : string -> list bool -> vector
-| vector_str : string -> list string -> vector
-| vector_all : string -> list ValueTypes -> vector.
-
-Notation "X [int]::= L" := (vector_nat X L) (at level 40).
-Notation "X [boolean]::= L" := (vector_bool X L) (at level 40).
-Notation "X [str]::= L" := (vector_str X L)(at level 40).
-Notation "X [all]::= L" := (vector_all X L) (at level 40).
-Check "vec" [int]::= [1;2;3].
-Check "vec" [boolean]::= [true;false;false].
-Check "vec" [str]::= ["a";"b";"c"].
-Check "vec" [all]::= [vs "a";vn 2;vb true].
-
-(*Definition vector_n := string -> list nat.
-Definition vector_b := string -> list bool.
-Definition vector_s := string -> list string.
-Definition vector_a := string -> list ValueTypes.
-
-Inductive vectorExp :=
-| push_nat: vector_nat -> nat -> vectorExp
-| push_bool: vector_bool -> bool -> vectorExp
-| push_string: vector_string -> string -> vectorExp
-| push_all: vector_all -> ValueTypes -> vectorExp
-| pop_back_nat: vector_nat -> vectorExp
-| pop_back_bool: vector_bool -> vectorExp
-| pop_back_string: vector_string -> vectorExp
-| pop_back_all: vector_all -> vectorExp.
-*)
-
-Inductive vectorExp :=
-| vec_natelem : string -> nat -> vectorExp
-| vec_n : string -> list AExp -> vectorExp
-| vec_booleanelem : string -> bool -> vectorExp
-| vec_b : string -> list bool -> vectorExp
-| vec_strelem : string -> list string -> vectorExp
-| vec_s : string -> string -> vectorExp
-| push_nat : vectorExp -> nat -> vectorExp
-| push_bool : vectorExp -> bool -> vectorExp
-| push_string : vectorExp -> string -> vectorExp
-| pop_back_nat : vectorExp -> vectorExp
-| pop_back_boolean : vectorExp -> vectorExp
-| pop_back_string: vectorExp -> vectorExp.
-
 
 Definition Env := string -> ValueTypes.
 (* adaugat de aici *)
@@ -166,6 +229,18 @@ Definition update_fstr (env : Env)
                       (var : string) (value : string) : Env :=
   fun var' => if(string_eq_dec var' var)
               then fs value
+              else (env var').
+Definition update_VecN (env : Env)(vec : string)(value : list nat) : Env :=
+  fun var' => if(string_eq_dec var' vec)
+              then vvn value
+              else (env var').
+Definition update_VecB (env : Env)(vec: string)(value : list bool) : Env :=
+  fun var' => if(string_eq_dec var' vec)
+              then vvb value
+              else (env var').
+Definition update_VecS (env : Env)(vec: string)(value : list string) : Env :=
+  fun var' => if(string_eq_dec var' vec)
+              then vvs value
               else (env var').
 
 Definition env0 : Env :=
@@ -286,6 +361,10 @@ Inductive beval : BExp -> Env -> bool -> Prop :=
     (a1 eq?' a2) ={ sigma }=> (string_beq s1 s2)
 where "B ={ S }=> B'" := (beval B S B').
 
+
+
+
+
 Inductive Stmt :=
 | declareN : AExp -> Stmt
 | declareB : BExp -> Stmt
@@ -293,6 +372,9 @@ Inductive Stmt :=
 | declareVecN : string -> Stmt
 | declareVecB : string -> Stmt
 | declareVecS : string -> Stmt
+| declarareStivaN : string -> Stmt
+| declarareStivaB : string -> Stmt
+| declarareStivaS : string -> Stmt
 | assignmentN : AExp -> AExp -> Stmt
 | assignmentB : BExp -> BExp -> Stmt
 | assignmentS : StrExp -> StrExp -> Stmt
@@ -300,6 +382,21 @@ Inductive Stmt :=
 | assignmentVecB : string -> list bool -> Stmt
 | assignmentVecS : string -> list string -> Stmt
 | sequence : Stmt -> Stmt -> Stmt
+| push_stack_n : string -> nat -> Stmt
+| push_stack_b : string -> bool -> Stmt
+| push_stack_s : string -> string -> Stmt
+| pop_stack_n : string -> Stmt
+| pop_stack_b : string -> Stmt
+| pop_stack_s : string -> Stmt
+| pushb_vec_nat : string -> nat -> Stmt
+| pushb_vec_bool : string -> bool -> Stmt
+| pushb_vec_string : string -> string -> Stmt
+| pushf_vec_nat : string -> nat -> Stmt
+| pushf_vec_bool : string -> bool -> Stmt
+| pushf_vec_string : string -> string -> Stmt
+| pop_vec_nat : string -> Stmt
+| pop_vec_bool : string -> Stmt
+| pop_vec_string: string -> Stmt
 | while : BExp -> Stmt -> Stmt
 | break : Stmt
 | continue : Stmt
@@ -331,7 +428,20 @@ Notation "<fstring> S" := (declareFS S)(at level 50).
 
 Check funct "main" [ <fint> "X" ] ( <int> "Y" ).
 
+Definition update_StackN (env : Env)(stack : string)(s : Sstack nat) :=
+fun x => if (string_eq_dec stack x)
+         then sn s
+         else env stack.
 
+Definition update_StackB (env : Env)(stack : string)(s : Sstack bool) :=
+fun x => if (string_eq_dec stack x)
+         then sb s
+         else env stack.
+
+Definition update_StackS (env : Env)(stack : string)(s : Sstack string) :=
+fun x => if (string_eq_dec stack x)
+         then ss s
+         else env stack.
 
 
 Reserved Notation "S -{ Sigma }-> Sigma'" (at level 60).
@@ -357,7 +467,7 @@ Inductive eval_st : Stmt -> Env -> Env -> Prop :=
 | e_assignmentS : forall a i x sigma sigma',
   a ~{ sigma }=> i ->
   sigma' = (update_str sigma x i) ->
-  (x <str>::= a) -{ sigma }-> sigma'    
+  (x <str>::= a) -{ sigma }-> sigma'  
 | e_seq : forall s1 s2 sigma sigma1 sigma2,
     s1 -{ sigma }-> sigma1 ->
     s2 -{ sigma1 }-> sigma2 ->
@@ -403,10 +513,93 @@ Inductive eval_st : Stmt -> Env -> Env -> Prop :=
    (s1 ;; s2) -{ sigma }-> sigma'
 | e_continue : forall s sigma,
    s -{ sigma }-> sigma
-| e_whilebreak : forall b s sigma,
-    b ={ sigma }=> true ->
-    ( break ;; while b s) -{ sigma }-> sigma ->
-    while b s -{ sigma }-> sigma
+| e_declStivaN : forall s sigma sigma',
+  sigma' = update_StackN sigma s (nill nat) ->
+  (declarareStivaN s) -{ sigma }-> sigma'
+| e_declStivaB : forall s sigma sigma',
+  sigma' = update_StackB sigma s (nill bool) ->
+  (declarareStivaB s) -{ sigma }-> sigma'
+| e_declStivaS : forall s sigma sigma',
+  sigma' = update_StackS sigma s (nill string) ->
+  (declarareStivaS s) -{ sigma }-> sigma'
+| e_push_stack_nat : forall sigma sigma' sigma'' stk n st,
+  sigma' = (update_StackN sigma st stk) ->
+  sigma'' = (update_StackN sigma st ( push_Sstack nat stk n) ) ->
+  push_stack_n st n -{ sigma' }-> sigma''
+| e_push_stack_bool : forall sigma sigma' sigma'' stk b st,
+  sigma' = (update_StackB sigma st stk) ->
+  sigma'' = (update_StackB sigma st ( push_Sstack bool stk b) ) ->
+  push_stack_b st b -{ sigma' }-> sigma''
+| e_push_stack_string : forall sigma sigma' sigma'' stk s st,
+  sigma' = (update_StackS sigma st stk) ->
+  sigma'' = (update_StackS sigma st ( push_Sstack string stk s) ) ->
+  push_stack_s st s -{ sigma' }-> sigma''
+| e_pop_stack_nat : forall sigma sigma' sigma'' stk st,
+  sigma' = (update_StackN sigma st stk ) ->
+  sigma'' = (update_StackN sigma st ( pop_Sstack nat stk)) ->
+  pop_stack_n st -{ sigma' }-> sigma''
+| e_pop_stack_bool : forall sigma sigma' sigma'' stk st,
+  sigma' = (update_StackB sigma st stk ) ->
+  sigma'' = (update_StackB sigma st ( pop_Sstack bool stk)) ->
+  pop_stack_b st -{ sigma' }-> sigma''
+| e_pop_stack_string : forall sigma sigma' sigma'' stk st,
+  sigma' = (update_StackS sigma st stk ) ->
+  sigma'' = (update_StackS sigma st ( pop_Sstack string stk)) ->
+  pop_stack_s st -{ sigma' }-> sigma''
+| e_declareVecN : forall sigma sigma' v,
+  sigma' = update_VecN sigma v [ ] ->
+  declareVecN v -{ sigma }-> sigma'
+| e_declareVecB : forall sigma sigma' v,
+  sigma' = update_VecB sigma v [ ] ->
+  declareVecB v -{ sigma }-> sigma'
+| e_declareVecS : forall sigma sigma' v,
+  sigma' = update_VecS sigma v [ ] ->
+  declareVecS v -{ sigma }-> sigma'
+| e_assignVecN : forall sigma sigma' v l,
+  sigma' = update_VecN sigma v l ->
+  assignmentVecN v l -{ sigma }-> sigma'
+| e_assignVecB : forall sigma sigma' v l,
+  sigma' = update_VecB sigma v l ->
+  assignmentVecB v l -{ sigma }-> sigma'
+| e_assignVecS : forall sigma sigma' v l,
+  sigma' = update_VecS sigma v l ->
+  assignmentVecS v l -{ sigma }-> sigma'
+| e_pushb_vec_nat : forall sigma sigma' sigma'' v l n,
+  sigma' = (update_VecN sigma v l) ->
+  sigma'' = (update_VecN sigma v (pb_nat l n) ) ->
+  (pushb_vec_nat v n) -{ sigma' }-> sigma''
+| e_pushb_vec_bool : forall sigma sigma' sigma'' v l b,
+  sigma' = (update_VecB sigma v l) ->
+  sigma'' = (update_VecB sigma v (pb_bool l b) ) ->
+  (pushb_vec_bool v b) -{ sigma' }-> sigma''
+| e_pushb_vec_string : forall sigma sigma' sigma'' v l s,
+  sigma' = (update_VecS sigma v l) ->
+  sigma'' = (update_VecS sigma v (pb_str l s) ) ->
+  (pushb_vec_string v s) -{ sigma' }-> sigma''
+| e_pushf_vec_nat : forall sigma sigma' sigma'' v l n,
+  sigma' = (update_VecN sigma v l) ->
+  sigma'' = (update_VecN sigma v (pf_nat l n) ) ->
+  (pushb_vec_nat v n) -{ sigma' }-> sigma''
+| e_pushf_vec_bool : forall sigma sigma' sigma'' v l b,
+  sigma' = (update_VecB sigma v l) ->
+  sigma'' = (update_VecB sigma v (pf_bool l b) ) ->
+  (pushf_vec_bool v b) -{ sigma' }-> sigma''
+| e_pushf_vec_string : forall sigma sigma' sigma'' v l s,
+  sigma' = (update_VecS sigma v l) ->
+  sigma'' = (update_VecS sigma v (pf_str l s) ) ->
+  (pushf_vec_string v s) -{ sigma' }-> sigma''
+| e_pop_vec_nat : forall sigma sigma' sigma'' v l,
+  sigma' = (update_VecN sigma v l) ->
+  sigma'' = (update_VecN sigma v (pop_n l)) ->
+  (pop_vec_nat v) -{ sigma' }-> sigma''                
+| e_pop_vec_bool : forall sigma sigma' sigma'' v l,
+  sigma' = (update_VecB sigma v l) ->
+  sigma'' = (update_VecB sigma v (pop_b l)) ->
+  (pop_vec_bool v) -{ sigma' }-> sigma''
+| e_pop_vec_string : forall sigma sigma' sigma'' v l,
+  sigma' = (update_VecS sigma v l) ->
+  sigma'' = (update_VecS sigma v (pop_s l)) ->
+  (pop_vec_string v) -{ sigma' }-> sigma''
 
 where "s -{ sigma }-> sigma'" := (eval_st s sigma sigma'). 
 
@@ -459,9 +652,6 @@ Qed.
 (* verificare seq *)
 Check (<int> "ana" ;; <boolean> "okay").
 Check (<int> "x" ;; "x" <int>::= 10 ;; <boolean> "notok" ;; "notok" <boolean>::= bfalse).
-(* aici nu am stiut cum sa fac acel bfalse sa fie false, adica sa pot scrie direct false,
-ce am incercat a complicat mult si nu am reusit sa continui si am lasat asa.., dar in 
-env el este false*)
 
 Example eval_whileF: while ("a" <=' 4) ("var" <int>::= 10) -{ env1 }-> env1.
 Proof.
@@ -645,6 +835,42 @@ Inductive RegExp :=
 
 Notation "a <.> b" := (conc a b) (at level 80).
 Notation "a || b" := (oor a b).
+
+Fixpoint init (exp : RegExp) : bool :=
+match exp with
+| gol => false
+| eps => true
+| chr a%string => false
+| conc a b => (init a && init b)%bool
+| oor a b => (init a || init b)%bool
+| star a => true
+| nott a => negb (init a)
+end.
+
+Fixpoint derivare (a : ascii)(exp : RegExp) : RegExp :=
+  match exp with
+  | gol => gol
+  | eps => gol
+  | chr c%string => match (ascii_dec c a) with
+                    | left _ => eps
+                    | right _ => gol 
+                    end
+  | conc x y => match (init x) with
+                | true => (derivare a x) <.> y || (derivare a y)
+                | false => (derivare a x) <.> y
+                end
+  | oor x y => (derivare a x) || (derivare a y)
+  | star x => (derivare a x) <.> (star x)
+  | nott x => nott (derivare a x)
+  end.
+
+Fixpoint matching (exp:RegExp)(s:string) : bool :=
+match s with
+| EmptyString => init exp
+| String a w => matching (derivare a exp) w
+end.
+
+
 (*Inductive Instruction :=
 | push_const : nat -> Instruction
 | push_var : string -> Instruction
@@ -659,26 +885,6 @@ Definition Envr := string -> Memory.
 Definition MemoryLayer := Memory -> ValueTypes.
 Definition Stack := list Envr.
 
-(*Check ValueTypes.
-Inductive Sstack (t : Set) : Set :=
-| nill : Sstack t
-| SStack : t -> Sstack t -> Sstack t.
-Check Sstack ValueTypes.
-Check Sstack nat.
-Check nill nat.
-Check SStack bool true.
-
-Definition push_Sstack (t : Set)(S : Sstack t)(v : t) : Sstack t := (SStack t v S).
-Compute (push_Sstack bool (nill bool) true).
-Compute (push_Sstack nat (SStack nat 2(nill nat)) 2).
-Definition pop_Sstack (t : Set)(S : Sstack t) : Sstack t :=
-  match S with
-  | SStack _ v s => s
-  | nill _ => nill t
-  end.
-Compute pop_Sstack string (SStack string "helo" (SStack string "ok" (nill string))).
-Compute pop_Sstack bool (SStack bool true(nill bool)).
-*)
 
 Inductive Config :=
   (* nat: last memory zone
@@ -687,3 +893,5 @@ Inductive Config :=
      Stack: stack 
   *)
   | config : nat -> Envr -> MemoryLayer -> Stack -> Config.
+
+
