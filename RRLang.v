@@ -26,89 +26,11 @@ Definition pop_Sstack (t : Set)(S : Sstack t) : Sstack t :=
 Compute pop_Sstack string (SStack string "helo" (SStack string "ok" (nill string))).
 Compute pop_Sstack bool (SStack bool true(nill bool)).
 
-(*
-Inductive vector :=
-| vector_nat : string -> list nat -> vector
-| vector_bool : string -> list bool -> vector
-| vector_str : string -> list string -> vector
-| vector_all : string -> list ValueTypes -> vector.
-
-Notation "X [int]::= L" := (vector_nat X L) (at level 40).
-Notation "X [boolean]::= L" := (vector_bool X L) (at level 40).
-Notation "X [str]::= L" := (vector_str X L)(at level 40).
-Notation "X [all]::= L" := (vector_all X L) (at level 40).
-Check "vec" [int]::= [1;2;3].
-Check "vec" [boolean]::= [true;false;false].
-Check "vec" [str]::= ["a";"b";"c"].
-Check "vec" [all]::= [vs "a";vn 2;vb true].
-Compute nth 2 [true].
-
-
-(*Definition vector_n := string -> list nat.
-Definition vector_b := string -> list bool.
-Definition vector_s := string -> list string.
-Definition vector_a := string -> list ValueTypes.
-
-Inductive vectorExp :=
-| push_nat: vector_nat -> nat -> vectorExp
-| push_bool: vector_bool -> bool -> vectorExp
-| push_string: vector_string -> string -> vectorExp
-| push_all: vector_all -> ValueTypes -> vectorExp
-| pop_back_nat: vector_nat -> vectorExp
-| pop_back_bool: vector_bool -> vectorExp
-| pop_back_string: vector_string -> vectorExp
-| pop_back_all: vector_all -> vectorExp.
-*)
-
-Inductive vectorExp :=
-| vec_natelem : string -> nat -> vectorExp
-| vec_n : string -> list nat -> vectorExp
-| vec_booleanelem : string -> bool -> vectorExp
-| vec_b : string -> list bool -> vectorExp
-| vec_strelem : string -> list string -> vectorExp
-| vec_s : string -> string -> vectorExp
-| push_nat : vectorExp -> nat -> vectorExp
-| push_bool : vectorExp -> bool -> vectorExp
-| push_string : vectorExp -> string -> vectorExp
-| pop_back_nat : vectorExp -> vectorExp
-| pop_back_boolean : vectorExp -> vectorExp
-| pop_back_string: vectorExp -> vectorExp.
-*)
-
-
 Definition vector_nat := list nat.
 Definition vector_bool := list bool.
 Definition vector_str := list string.
-(*
-Inductive VecExp :=
-| vec_n : vector_nat -> nat -> VecExp
-| vec_b : vector_bool -> bool -> VecExp
-| vec_s : vector_str -> string -> VecExp
-| push_back_nat : vector_nat -> nat -> VecExp
-| push_back_bool : vector_bool -> bool -> VecExp
-| push_back_str : vector_str -> string -> VecExp
-| push_front_nat : vector_nat -> nat -> VecExp
-| push_front_bool : vector_bool -> bool -> VecExp
-| push_front_str : vector_str -> string -> VecExp
-| pop_back_nat : vector_nat -> VecExp
-| pop_back_boolean : vector_bool -> VecExp
-| pop_back_string : vector_str -> VecExp.
-*)
-Definition indexNVec(vec : vector_nat) (n : nat) : nat := nth n vec 0. 
-Definition indexBVec(vec : vector_bool) (n : nat) : bool := nth n vec true. 
-Definition indexSVec(vec : vector_str) (n : nat) : string := nth n vec "". 
 
-Definition pb_nat (vec : vector_nat) (n : nat) : vector_nat := rev( n :: rev vec).
-Definition pb_bool (vec : vector_bool) (b : bool) : vector_bool := rev( b :: rev vec).
-Definition pb_str (vec : vector_str) (s : string) : vector_str := rev( s :: rev vec).
 
-Definition pf_nat (vec : vector_nat) (n : nat) : vector_nat := n :: vec.
-Definition pf_bool (vec : vector_bool) (b : bool) : vector_bool := b :: vec.
-Definition pf_str (vec : vector_str) (s : string) : vector_str := s :: vec.
-
-Definition pop_n (vec : vector_nat) : vector_nat := rev(removelast (rev vec)).
-Definition pop_b (vec : vector_bool) : vector_bool := rev(removelast (rev vec)).
-Definition pop_s (vec : vector_str) : vector_str := rev(removelast (rev vec)).
 
 Inductive ValueTypes :=
 | vn : nat -> ValueTypes 
@@ -125,6 +47,22 @@ Inductive ValueTypes :=
 | vvs : list string -> ValueTypes
 | empty : ValueTypes.
 
+Definition indexNVec(vec : vector_nat) (n : nat) : nat := nth n vec 0. 
+Definition indexBVec(vec : vector_bool) (n : nat) : bool := nth n vec true. 
+Definition indexSVec(vec : vector_str) (n : nat) : string := nth n vec "". 
+
+Definition pb_nat (vec : vector_nat) (n : nat) : vector_nat := rev( n :: rev vec).
+Definition pb_bool (vec : vector_bool) (b : bool) : vector_bool := rev( b :: rev vec).
+Definition pb_str (vec : vector_str) (s : string) : vector_str := rev( s :: rev vec).
+
+Definition pf_nat (vec : vector_nat) (n : nat) : vector_nat := n :: vec.
+Definition pf_bool (vec : vector_bool) (b : bool) : vector_bool := b :: vec.
+Definition pf_str (vec : vector_str) (s : string) : vector_str := s :: vec.
+
+Definition pop_n (vec : vector_nat) : vector_nat := rev(removelast (rev vec)).
+Definition pop_b (vec : vector_bool) : vector_bool := rev(removelast (rev vec)).
+Definition pop_s (vec : vector_str) : vector_str := rev(removelast (rev vec)).
+
 
 Inductive AExp:=
 | avar : string -> AExp
@@ -134,7 +72,8 @@ Inductive AExp:=
 | amul : AExp -> AExp -> AExp
 | aminus : AExp -> AExp -> AExp
 | afrac : AExp -> AExp -> AExp
-| amod : AExp -> AExp -> AExp.
+| amod : AExp -> AExp -> AExp
+| idx_vecn : string -> list nat -> nat -> AExp.
 
 Notation "A +' B" := (aplus A B)(at level 60, right associativity).
 Notation "A -' B" := (aminus A B)(at level 60, right associativity).
@@ -146,7 +85,8 @@ Notation "A %' B" := (amod A B)(at level 58, left associativity).
 Inductive StrExp :=
 | strvar : string -> StrExp
 | strfvar : string -> StrExp
-| strconc : StrExp -> StrExp -> StrExp.
+| strconc : StrExp -> StrExp -> StrExp
+| idx_vecs : string -> list string -> nat -> StrExp.
 
 
 Notation "S <strcat> S'" := (strconc S S')(at level 70).
@@ -161,7 +101,8 @@ Inductive BExp :=
 | band : BExp -> BExp -> BExp
 | bmorethaneq : AExp -> AExp -> BExp
 | blessthaneq : AExp -> AExp -> BExp
-| bstrcomp : StrExp -> StrExp -> BExp.
+| bstrcomp : StrExp -> StrExp -> BExp
+| idx_vecb : string -> list bool -> nat -> BExp.
 
 Notation "A <=' B" := (blessthaneq A B) (at level 70).
 Notation "A >=' B" := (bmorethaneq A B)(at level 70).
@@ -169,6 +110,28 @@ Notation " ! A " := (bnot A)(at level 20).
 Notation "A eq?' B" := (bstrcomp A B) (at level 80).
 Infix "and'" := band (at level 80).
 Infix "or'" := bor (at level 81).
+
+Inductive VecExpN :=
+| vecvar_n : string -> VecExpN
+| list_n : list nat -> VecExpN
+| pb_vecn : string -> list nat -> nat -> VecExpN
+| pf_vecn : string -> list nat -> nat -> VecExpN
+| pop_vecn : string -> list nat -> VecExpN.
+
+Inductive VecExpB :=
+| vecvar_b : string -> VecExpB
+| list_b : list bool -> VecExpB
+| pb_vecb : string -> list bool -> bool -> VecExpB
+| pf_vecb : string -> list bool -> bool -> VecExpB
+| pop_vecb : string -> list bool -> VecExpB.
+
+Inductive VecExpS :=
+| vecvar_s : string -> VecExpS
+| list_s : list string -> VecExpS
+| pb_vecs : string -> list string -> string -> VecExpS
+| pf_vecs : string -> list string -> string -> VecExpS
+| pop_vecs : string -> list string -> VecExpS.
+
 
 
 
@@ -243,6 +206,21 @@ Definition update_VecS (env : Env)(vec: string)(value : list string) : Env :=
               then vvs value
               else (env var').
 
+Definition update_StackN (env : Env)(stack : string)(s : Sstack nat) :=
+fun x => if (string_eq_dec stack x)
+         then sn s
+         else env stack.
+
+Definition update_StackB (env : Env)(stack : string)(s : Sstack bool) :=
+fun x => if (string_eq_dec stack x)
+         then sb s
+         else env stack.
+
+Definition update_StackS (env : Env)(stack : string)(s : Sstack string) :=
+fun x => if (string_eq_dec stack x)
+         then ss s
+         else env stack.
+
 Definition env0 : Env :=
     fun v => if(string_beq v "placeholdervar")
              then vn 0
@@ -262,6 +240,62 @@ Definition env2 : Env :=
            else if(string_beq v "b")
            then vb true
            else empty.
+Reserved Notation "V ~~{ S }=> V'" (at level 70).
+Inductive veceval_n : VecExpN -> Env -> list nat -> Prop :=
+| vn_var : forall v sigma, (vecvar_n v) ~~{ sigma }=> match (sigma v) with
+                                                    | vvn v => v
+                                                    | _ => []
+                                                    end
+| vn_const : forall l sigma, list_n l ~~{ sigma }=> l
+| pushb_n : forall v l n l1 sigma,
+  list_n l ~~{ sigma }=> l1 -> 
+  pb_vecn v l n ~~{ sigma }=> (pb_nat l1 n)
+| pushf_n : forall v l n l1 sigma,
+  list_n l ~~{ sigma }=> l1 ->
+  pf_vecn v l n ~~{ sigma }=> (pf_nat l1 n)
+| popv_n : forall v l l1 sigma,
+  list_n l ~~{ sigma }=> l1 ->
+  pop_vecn v l ~~{ sigma }=> (pop_n l1)
+
+  
+where "V ~~{ S }=> V'" := (veceval_n V S V').
+
+Reserved Notation "V ~~~{ S }=> V'" (at level 70).
+Inductive veceval_b : VecExpB -> Env -> list bool -> Prop :=
+| vb_var : forall v sigma, (vecvar_b v) ~~~{ sigma }=> match (sigma v) with
+                                                    | vvb v => v
+                                                    | _ => []
+                                                    end
+| vb_const : forall l sigma, list_b l ~~~{ sigma }=> l
+| pushb_b : forall v l b l1 sigma,
+  list_b l ~~~{ sigma }=> l1 -> 
+  pb_vecb v l b ~~~{ sigma }=> (pb_bool l1 b)
+| pushf_b : forall v l b l1 sigma,
+  list_b l ~~~{ sigma }=> l1 ->
+  pf_vecb v l b ~~~{ sigma }=> (pf_bool l1 b)
+| popv_b : forall v l l1 sigma,
+  list_b l ~~~{ sigma }=> l1 ->
+  pop_vecb v l ~~~{ sigma }=> (pop_b l1)
+
+where "V ~~~{ S }=> V'" := (veceval_b V S V').
+
+Reserved Notation "V ~~~~{ S }=> V'" (at level 70).
+Inductive veceval_s : VecExpS -> Env -> list string -> Prop :=
+| vs_var : forall v sigma, (vecvar_s v) ~~~~{ sigma }=> match (sigma v) with
+                                                    | vvs v => v
+                                                    | _ => []
+                                                    end
+| vs_const : forall l sigma, list_s l ~~~~{ sigma }=> l
+| pushb_s : forall v l s l1 sigma,
+  list_s l ~~~~{ sigma }=> l1 -> 
+  pb_vecs v l s ~~~~{ sigma }=> (pb_str l1 s)
+| pushf_s : forall v l s l1 sigma,
+  list_s l ~~~~{ sigma }=> l1 ->
+  pf_vecs v l s ~~~~{ sigma }=> (pf_str l1 s)
+| popv_s : forall v l l1 sigma,
+  list_s l ~~~~{ sigma }=> l1 ->
+  pop_vecs v l ~~~~{ sigma }=> (pop_s l1)
+where "V ~~~~{ S }=> V'" := (veceval_s V S V').
 
 
 Reserved Notation "A =[ S ]=> N" (at level 61).
@@ -303,6 +337,9 @@ Inductive aeval : AExp -> Env -> nat -> Prop :=
    n = i1 / i2 ->
    true = negb (Nat.leb i2 0) ->
    a1 /' a2 =[ sigma ]=> n
+| idx_n : forall v l n l1 sigma,
+  list_n l ~~{ sigma }=> l1 ->
+  idx_vecn v l n =[ sigma ]=> (indexNVec l1 n)
 
 where "a =[ sigma ]=> n" := (aeval a sigma n).
 
@@ -321,6 +358,9 @@ Inductive streval : StrExp -> Env -> string -> Prop :=
          a2 ~{ sigma }=> s2 ->
          s = (append s1 s2) ->
          a1 <strcat> a2 ~{ sigma }=> s
+| idx_s : forall v l n l1 sigma,
+  list_s l ~~~~{ sigma }=> l1 ->
+  idx_vecs v l n ~{ sigma }=> (indexSVec l1 n)
 where "A ~{ S }=> B" := (streval A S B).
          
 Reserved Notation "B ={ S }=> B'" (at level 70).
@@ -359,7 +399,12 @@ Inductive beval : BExp -> Env -> bool -> Prop :=
     a1 ~{ sigma }=> s1 ->
     a2 ~{ sigma }=> s2 ->
     (a1 eq?' a2) ={ sigma }=> (string_beq s1 s2)
+| idx_b : forall v l n l1 sigma,
+  list_b l ~~~{ sigma }=> l1 ->
+  idx_vecb v l n ={ sigma }=> (indexBVec l1 n)
 where "B ={ S }=> B'" := (beval B S B').
+
+
 
 
 
@@ -425,23 +470,15 @@ Notation "'For' ( I1 ';' B ';' It ) 'do' S" := (foor I1 B It S)(at level 60).
 Notation "<fint> X" := (declareFN X)(at level 50).
 Notation "<fboolean> B" := (declareFB B)(at level 50).
 Notation "<fstring> S" := (declareFS S)(at level 50).
+Notation "X [int]" := (declareVecN X) (at level 40).
+Notation "X [boolean]" := (declareVecB X) (at level 40).
+Notation "X [str]" := (declareVecS X)(at level 40).
+Notation "X [int]::= L" := (assignmentVecN X L) (at level 40).
+Notation "X [boolean]::= L" := (assignmentVecB X L) (at level 40).
+Notation "X [str]::= L" := (assignmentVecS X L)(at level 40).
 
 Check funct "main" [ <fint> "X" ] ( <int> "Y" ).
 
-Definition update_StackN (env : Env)(stack : string)(s : Sstack nat) :=
-fun x => if (string_eq_dec stack x)
-         then sn s
-         else env stack.
-
-Definition update_StackB (env : Env)(stack : string)(s : Sstack bool) :=
-fun x => if (string_eq_dec stack x)
-         then sb s
-         else env stack.
-
-Definition update_StackS (env : Env)(stack : string)(s : Sstack string) :=
-fun x => if (string_eq_dec stack x)
-         then ss s
-         else env stack.
 
 
 Reserved Notation "S -{ Sigma }-> Sigma'" (at level 60).
@@ -513,6 +550,7 @@ Inductive eval_st : Stmt -> Env -> Env -> Prop :=
    (s1 ;; s2) -{ sigma }-> sigma'
 | e_continue : forall s sigma,
    s -{ sigma }-> sigma
+
 | e_declStivaN : forall s sigma sigma',
   sigma' = update_StackN sigma s (nill nat) ->
   (declarareStivaN s) -{ sigma }-> sigma'
@@ -522,18 +560,17 @@ Inductive eval_st : Stmt -> Env -> Env -> Prop :=
 | e_declStivaS : forall s sigma sigma',
   sigma' = update_StackS sigma s (nill string) ->
   (declarareStivaS s) -{ sigma }-> sigma'
-| e_push_stack_nat : forall sigma sigma' sigma'' stk n st,
-  sigma' = (update_StackN sigma st stk) ->
+
+| e_push_stack_nat : forall sigma sigma'' stk n st,
   sigma'' = (update_StackN sigma st ( push_Sstack nat stk n) ) ->
-  push_stack_n st n -{ sigma' }-> sigma''
-| e_push_stack_bool : forall sigma sigma' sigma'' stk b st,
-  sigma' = (update_StackB sigma st stk) ->
+  push_stack_n st n -{ sigma }-> sigma''
+| e_push_stack_bool : forall sigma sigma'' stk b st,
   sigma'' = (update_StackB sigma st ( push_Sstack bool stk b) ) ->
-  push_stack_b st b -{ sigma' }-> sigma''
-| e_push_stack_string : forall sigma sigma' sigma'' stk s st,
-  sigma' = (update_StackS sigma st stk) ->
+  push_stack_b st b -{ sigma }-> sigma''
+| e_push_stack_string : forall sigma sigma'' stk s st,
   sigma'' = (update_StackS sigma st ( push_Sstack string stk s) ) ->
-  push_stack_s st s -{ sigma' }-> sigma''
+  push_stack_s st s -{ sigma }-> sigma''
+
 | e_pop_stack_nat : forall sigma sigma' sigma'' stk st,
   sigma' = (update_StackN sigma st stk ) ->
   sigma'' = (update_StackN sigma st ( pop_Sstack nat stk)) ->
@@ -546,6 +583,7 @@ Inductive eval_st : Stmt -> Env -> Env -> Prop :=
   sigma' = (update_StackS sigma st stk ) ->
   sigma'' = (update_StackS sigma st ( pop_Sstack string stk)) ->
   pop_stack_s st -{ sigma' }-> sigma''
+
 | e_declareVecN : forall sigma sigma' v,
   sigma' = update_VecN sigma v [ ] ->
   declareVecN v -{ sigma }-> sigma'
@@ -555,51 +593,70 @@ Inductive eval_st : Stmt -> Env -> Env -> Prop :=
 | e_declareVecS : forall sigma sigma' v,
   sigma' = update_VecS sigma v [ ] ->
   declareVecS v -{ sigma }-> sigma'
-| e_assignVecN : forall sigma sigma' v l,
-  sigma' = update_VecN sigma v l ->
+
+| e_assignVecN : forall sigma sigma' v l l1,
+  list_n l ~~{ sigma }=> l1 ->
+  sigma' = update_VecN sigma v l1 ->
   assignmentVecN v l -{ sigma }-> sigma'
-| e_assignVecB : forall sigma sigma' v l,
-  sigma' = update_VecB sigma v l ->
+| e_assignVecB : forall sigma sigma' v l l1,
+  list_b l ~~~{ sigma }=> l1 ->
+  sigma' = update_VecB sigma v l1 ->
   assignmentVecB v l -{ sigma }-> sigma'
-| e_assignVecS : forall sigma sigma' v l,
+| e_assignVecS : forall sigma sigma' v l l1,
+  list_s l ~~~~{ sigma }=> l1 ->
   sigma' = update_VecS sigma v l ->
   assignmentVecS v l -{ sigma }-> sigma'
-| e_pushb_vec_nat : forall sigma sigma' sigma'' v l n,
-  sigma' = (update_VecN sigma v l) ->
-  sigma'' = (update_VecN sigma v (pb_nat l n) ) ->
-  (pushb_vec_nat v n) -{ sigma' }-> sigma''
-| e_pushb_vec_bool : forall sigma sigma' sigma'' v l b,
-  sigma' = (update_VecB sigma v l) ->
-  sigma'' = (update_VecB sigma v (pb_bool l b) ) ->
-  (pushb_vec_bool v b) -{ sigma' }-> sigma''
-| e_pushb_vec_string : forall sigma sigma' sigma'' v l s,
-  sigma' = (update_VecS sigma v l) ->
-  sigma'' = (update_VecS sigma v (pb_str l s) ) ->
-  (pushb_vec_string v s) -{ sigma' }-> sigma''
-| e_pushf_vec_nat : forall sigma sigma' sigma'' v l n,
-  sigma' = (update_VecN sigma v l) ->
-  sigma'' = (update_VecN sigma v (pf_nat l n) ) ->
-  (pushb_vec_nat v n) -{ sigma' }-> sigma''
-| e_pushf_vec_bool : forall sigma sigma' sigma'' v l b,
-  sigma' = (update_VecB sigma v l) ->
-  sigma'' = (update_VecB sigma v (pf_bool l b) ) ->
-  (pushf_vec_bool v b) -{ sigma' }-> sigma''
-| e_pushf_vec_string : forall sigma sigma' sigma'' v l s,
-  sigma' = (update_VecS sigma v l) ->
-  sigma'' = (update_VecS sigma v (pf_str l s) ) ->
-  (pushf_vec_string v s) -{ sigma' }-> sigma''
-| e_pop_vec_nat : forall sigma sigma' sigma'' v l,
-  sigma' = (update_VecN sigma v l) ->
-  sigma'' = (update_VecN sigma v (pop_n l)) ->
-  (pop_vec_nat v) -{ sigma' }-> sigma''                
-| e_pop_vec_bool : forall sigma sigma' sigma'' v l,
-  sigma' = (update_VecB sigma v l) ->
-  sigma'' = (update_VecB sigma v (pop_b l)) ->
-  (pop_vec_bool v) -{ sigma' }-> sigma''
-| e_pop_vec_string : forall sigma sigma' sigma'' v l,
-  sigma' = (update_VecS sigma v l) ->
-  sigma'' = (update_VecS sigma v (pop_s l)) ->
-  (pop_vec_string v) -{ sigma' }-> sigma''
+
+| e_pushb_vec_nat : forall sigma sigma'' v x n,
+  (vecvar_n v) ~~{ sigma }=> x ->
+  pb_vecn v x n ~~{ sigma }=> (pb_nat x n) ->
+  sigma'' = (update_VecN sigma v (pb_nat x n)) ->
+  (pushb_vec_nat v n) -{ sigma }-> sigma''
+| e_pushb_vec_bool : forall sigma sigma'' v x b,
+  (vecvar_b v) ~~~{ sigma }=> x ->
+  pb_vecb v x b ~~~{ sigma }=> (pb_bool x b) ->
+  sigma'' = (update_VecB sigma v (pb_bool x b)) ->
+  (pushb_vec_bool v b) -{ sigma }-> sigma''
+| e_pushb_vec_string : forall sigma sigma'' v x s,
+  (vecvar_s v) ~~~~{ sigma }=> x ->
+  pb_vecs v x s ~~~~{ sigma }=> (pb_str x s) ->
+  sigma'' = (update_VecS sigma v (pb_str x s)) ->
+  (pushb_vec_string v s) -{ sigma }-> sigma''
+
+| e_pushf_vec_nat : forall sigma sigma'' v x n,
+  (vecvar_n v) ~~{ sigma }=> x ->
+  pf_vecn v x n ~~{ sigma }=> (pf_nat x n) ->
+  sigma'' = (update_VecN sigma v (pf_nat x n)) ->
+  (pushf_vec_nat v n) -{ sigma }-> sigma''
+| e_pushf_vec_bool : forall sigma sigma'' v x b,
+  (vecvar_b v) ~~~{ sigma }=> x ->
+  pf_vecb v x b ~~~{ sigma }=> (pf_bool x b) ->
+  sigma'' = (update_VecB sigma v (pf_bool x b)) ->
+  (pushf_vec_bool v b) -{ sigma }-> sigma''
+| e_pushf_vec_string :  forall sigma sigma'' v x s,
+  (vecvar_s v) ~~~~{ sigma }=> x ->
+  pf_vecs v x s ~~~~{ sigma }=> (pf_str x s) ->
+  sigma'' = (update_VecS sigma v (pf_str x s)) ->
+  (pushf_vec_string v s) -{ sigma }-> sigma''
+
+| e_pop_vec_nat : forall sigma sigma'' v x,
+  (vecvar_n v) ~~{ sigma }=> x ->
+  pop_vecn v x ~~{ sigma }=> (pop_n x) ->
+  sigma'' = (update_VecN sigma v (pop_n x)) ->
+  (pop_vec_nat v) -{ sigma }-> sigma''                
+| e_pop_vec_bool : forall sigma sigma'' v x,
+  (vecvar_b v) ~~~{ sigma }=> x ->
+  pop_vecb v x ~~~{ sigma }=> (pop_b x) ->
+  sigma'' = (update_VecB sigma v (pop_b x)) ->
+  (pop_vec_bool v) -{ sigma }-> sigma''
+| e_pop_vec_string : forall sigma sigma'' v x,
+  (vecvar_s v) ~~~~{ sigma }=> x ->
+  pop_vecs v x ~~~~{ sigma }=> (pop_s x) ->
+  sigma'' = (update_VecS sigma v (pop_s x)) ->
+  (pop_vec_string v) -{ sigma }-> sigma''
+
+
+
 
 where "s -{ sigma }-> sigma'" := (eval_st s sigma sigma'). 
 
@@ -624,6 +681,7 @@ Definition env1 : Env :=
              else if(string_beq v "b")
              then vn 2
              else empty.
+
 
 Example eval_decN: <int> "x" -{ env0 }-> (update_nat env0 "x" 0).
 Proof.
@@ -824,6 +882,156 @@ Proof.
     + eapply e_continue.
   - eauto.
 Qed.
+
+Definition envvec : Env :=
+  fun v => if(string_beq v "vecn")
+           then vvn [1;2;3]
+           else if(string_beq v "vecb")
+           then vvb [true;false]
+           else if(string_beq v "vecs")
+           then vvs ["hei";"hello"]
+           else empty.
+Compute envvec "vecn".
+
+Example eval_decVecN: "vec1" [int] -{ envvec }-> (update_VecN envvec "vec1" []).
+Proof.
+    eapply e_declareVecN. reflexivity.
+Qed.
+
+Example eval_decVecB: "vec2" [boolean] -{ envvec }-> (update_VecB envvec "vec2" []).
+Proof.
+    eapply e_declareVecB. reflexivity.
+Qed.
+
+Example eval_decVecS: "vec3" [str] -{ envvec }-> (update_VecS envvec "vec3" []).
+Proof.
+    eapply e_declareVecS. reflexivity.
+Qed.
+
+Example eval_assignVecN: ("vecn" [int]::= [3;4;5]) -{ envvec }-> (update_VecN envvec "vecn" [3;4;5]).
+Proof.
+   eapply e_assignVecN.
+   - eapply vn_const.
+   - reflexivity.
+Qed.
+
+Example eval_assignVecB: ("vecb" [boolean]::= [true;true;true]) -{ envvec }-> (update_VecB envvec "vecb" [true;true;true]).
+Proof.
+   eapply e_assignVecB.
+   - eapply vb_const.
+   - reflexivity.
+Qed.
+
+Example eval_assignVecS: ("vecs" [str]::= ["x"]) -{ envvec }-> (update_VecS envvec "vecs" ["x"]).
+Proof.
+   eapply e_assignVecS.
+   - eapply vs_const.
+   - reflexivity.
+Qed.
+
+
+Example eval_pbVecN: exists sigma, pushb_vec_nat "vecn" 7 -{ envvec }-> sigma /\ sigma "vecn" = vvn [1;2;3;7].
+Proof.
+  eexists.
+  split.
+  - eapply e_pushb_vec_nat.
+    + eapply vn_var; eauto.
+    + eapply pushb_n. eapply vn_const.
+    + eauto.
+  - eauto.
+Qed.
+
+Example eval_pbVecB: exists sigma, pushb_vec_bool "vecb" true -{ envvec }-> sigma /\ sigma "vecb" = vvb [true;false;true].
+Proof.
+  eexists.
+  split.
+  - eapply e_pushb_vec_bool.
+    + eapply vb_var; eauto.
+    + eapply pushb_b. eapply vb_const.
+    + eauto.
+  - eauto.
+Qed.
+
+Example eval_pbVecS: exists sigma, pushb_vec_string "vecs" "oo" -{ envvec }-> sigma /\ sigma "vecs" = vvs ["hei";"hello";"oo"].
+Proof.
+  eexists.
+  split.
+  - eapply e_pushb_vec_string.
+    + eapply vs_var; eauto.
+    + eapply pushb_s. eapply vs_const.
+    + eauto.
+  - eauto.
+Qed.
+
+Example eval_pfVecN: exists sigma, pushf_vec_nat "vecn" 7 -{ envvec }-> sigma /\ sigma "vecn" = vvn [7;1;2;3].
+Proof.
+  eexists.
+  split.
+  - eapply e_pushf_vec_nat.
+    + eapply vn_var; eauto.
+    + eapply pushf_n. eapply vn_const.
+    + eauto.
+  - eauto.
+Qed.
+
+Example eval_pfVecB: exists sigma, pushf_vec_bool "vecb" true -{ envvec }-> sigma /\ sigma "vecb" = vvb [true;true;false].
+Proof.
+  eexists.
+  split.
+  - eapply e_pushf_vec_bool.
+    + eapply vb_var; eauto.
+    + eapply pushf_b. eapply vb_const.
+    + eauto.
+  - eauto.
+Qed.
+
+Example eval_pfVecS: exists sigma, pushf_vec_string "vecs" "oo" -{ envvec }-> sigma /\ sigma "vecs" = vvs ["oo";"hei";"hello"].
+Proof.
+  eexists.
+  split.
+  - eapply e_pushf_vec_string.
+    + eapply vs_var; eauto.
+    + eapply pushf_s. eapply vs_const.
+    + eauto.
+  - eauto.
+Qed.
+
+Example eval_popVecN: exists sigma, pop_vec_nat "vecn" -{ envvec }-> sigma /\ sigma "vecn" = vvn [2;3].
+Proof.
+  eexists.
+  split.
+  - eapply e_pop_vec_nat.
+    + eapply vn_var; eauto.
+    + eapply popv_n. eapply vn_const.
+    + eauto.
+  - eauto.
+Qed.
+
+Example eval_popVecB: exists sigma, pop_vec_bool "vecb" -{ envvec }-> sigma /\ sigma "vecb" = vvb [false].
+Proof.
+  eexists.
+  split.
+  - eapply e_pop_vec_bool.
+    + eapply vb_var; eauto.
+    + eapply popv_b. eapply vb_const.
+    + eauto.
+  - eauto.
+Qed.
+
+Example eval_popVecS: exists sigma, pop_vec_string "vecs" -{ envvec }-> sigma /\ sigma "vecs" = vvs ["hello"].
+Proof.
+  eexists.
+  split.
+  - eapply e_pop_vec_string.
+    + eapply vs_var; eauto.
+    + eapply popv_s. eapply vs_const.
+    + eauto.
+  - eauto.
+Qed.
+
+
+
+
 Inductive RegExp :=
 | gol : RegExp
 | eps : RegExp
