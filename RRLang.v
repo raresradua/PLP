@@ -1101,5 +1101,289 @@ Inductive Config :=
      Stack: stack 
   *)
   | config : nat -> Envr -> MemoryLayer -> Stack -> Config.
+(*
+Fixpoint interpret (e:AExp) (env : Env): nat :=
+  match e with
+  | anum x => x
+  | avar x => match (env x) with
+              | vn x => x
+              | _ => 0
+              end
+  | favar x => match (env x) with
+              | fn x => x
+              | _ => 0
+              end
+  | aplus x y => (interpret x env) + (interpret y env)
+  | aminus x y => (interpret x env) - (interpret y env)
+  | amul x y => (interpret x env) * (interpret y env)
+  | afrac x y => (interpret x env) / (interpret y env)
+  | amod x y => (interpret x env) mod (interpret y env)
+  end
+.
+
+Compute (interpret "a" env1).
+Compute (interpret (10 +' "a") env1).
+Inductive instr_AExp :=
+| push_num : nat -> instr_AExp
+| push_var : string -> instr_AExp
+| push_fvar : string -> instr_AExp
+| addd : instr_AExp
+| sub : instr_AExp
+| mul : instr_AExp
+| divv : instr_AExp
+| rest : instr_AExp.
 
 
+Definition AExp_Stack := list nat.
+Definition run_instruction_AExp (i : instr_AExp) (env : Env) (stack : AExp_Stack) : AExp_Stack :=
+  match i with
+  | push_num x => (x :: stack)
+  | push_var x => (match (env x) with
+                  | vn x => x
+                  | _ => 0
+                  end
+                  :: stack)
+  | push_fvar x => (match (env x) with
+                  | fn x => x
+                  | _ => 0
+                  end :: stack)
+  | addd => match stack with
+         | x :: y :: stack' => ((x + y) :: stack')
+         | _ => stack
+          end
+  | sub => match stack with
+         | x :: y :: stack' => ((x - y) :: stack')
+         | _ => stack
+          end
+  | mul => match stack with
+        | x :: y :: stack' => ((x * y) :: stack')
+        | _ => stack
+          end
+  | divv => match stack with
+        | x :: y :: stack' => ((x / y) :: stack')
+        | _ => stack
+          end
+  | rest => match stack with
+         | x :: y :: stack' => ((x mod y) :: stack')
+         | _ => stack
+          end
+
+  end.
+
+Compute (run_instruction_AExp (push_num 10) env0 []).
+Compute (run_instruction_AExp (push_var "var") env0 []).
+Compute (run_instruction_AExp mul env0 [20;30;40;50]).
+
+
+Fixpoint run_instructionS_AExp (i' : list instr_AExp) (env : Env) (stack : AExp_Stack) : AExp_Stack :=
+  match i' with
+  | [] => stack
+  | i :: i'' => run_instructionS_AExp i'' env (run_instruction_AExp i env stack)
+  end.
+
+Definition pgm1 := [ push_num 20 ; push_var "var" ].
+Compute run_instructionS_AExp pgm1 env0 [].
+Definition pgm2 := [ push_num 30; push_num 40; mul; push_num 100; addd].
+Compute run_instructionS_AExp pgm2 env0 [].
+
+Fixpoint AExp_Compile (e : AExp) : list instr_AExp :=
+  match e with
+  | anum x => [push_num x]
+  | favar x => [push_fvar x]
+  | avar x => [push_var x]
+  | aplus x y => (AExp_Compile x) ++ (AExp_Compile y) ++ [addd]
+  | aminus x y => (AExp_Compile y) ++ (AExp_Compile x) ++ [sub]
+  | amul x y => (AExp_Compile x) ++ (AExp_Compile y) ++ [mul]
+  | afrac x y => (AExp_Compile y) ++ (AExp_Compile x) ++ [divv]
+  | amod x y => (AExp_Compile y) ++ (AExp_Compile x) ++ [rest]
+  end.
+
+
+Lemma soundness_helperAExp:
+forall e env stack is',
+  run_instructionS_AExp(AExp_Compile e ++ is') env stack =
+    run_instructionS_AExp is' env ((interpret e env) :: stack).
+Proof.
+  induction e; intro; simpl; trivial.
+  - intuition. 
+    rewrite <- app_assoc. 
+    rewrite <- app_assoc. 
+    rewrite IHe1. 
+    rewrite IHe2. 
+    simpl. 
+    rewrite PeanoNat.Nat.add_comm. 
+    reflexivity.
+  - intuition.
+    rewrite <- app_assoc.
+    rewrite <- app_assoc.
+    rewrite IHe1.
+    rewrite IHe2.
+    simpl.
+    rewrite PeanoNat.Nat.mul_comm.
+    reflexivity.
+  - intuition.
+    rewrite <- app_assoc.
+    rewrite <- app_assoc.
+    rewrite IHe2.
+    rewrite IHe1.
+    simpl.
+    reflexivity.
+ - intuition.
+   rewrite <- app_assoc.
+    rewrite <- app_assoc.
+    rewrite IHe2.
+    rewrite IHe1.
+    simpl.
+    reflexivity.
+ - intuition.
+   rewrite <- app_assoc.
+   rewrite <- app_assoc.
+   rewrite IHe2.
+   rewrite IHe1.
+   simpl.
+   reflexivity.
+Qed.
+
+Lemma soundness_AExp:
+  forall e env,
+  run_instructionS_AExp(AExp_Compile e) env [] = [interpret e env].
+Proof.
+  intros.
+  Check app_nil_r.
+  intuition.
+  rewrite <- app_nil_r with (l := (AExp_Compile e)).
+  rewrite soundness_helperAExp.
+  simpl.
+  trivial.
+Qed.
+
+Fixpoint interpretBExp (e : BExp)(env : Env) : bool :=
+  match e with
+  | btrue => true
+  | bfalse => false
+  | boolvar b => match (env b) with
+              | vb b => b
+              | _ => true
+              end
+  | boolfvar b => match (env b) with
+              | fb b => b
+              | _ => true
+              end
+  | blessthaneq b1 b2 => leb (interpret b1 env) (interpret b2 env)
+  | bmorethaneq b1 b2 => leb (interpret b2 env) (interpret b1 env)
+  | bnot b => negb (interpretBExp b env)
+  | band b1 b2 => andb (interpretBExp b1 env) (interpretBExp b2 env)
+  | bor b1 b2 => orb (interpretBExp b1 env) (interpretBExp b2 env)
+end.
+
+Compute interpretBExp (10 <=' "a") env1.
+Compute interpretBExp (! "a") env1.
+Compute interpretBExp ((btrue) and' (bfalse)) env1.
+
+Inductive instr_BExp :=
+| push_bool : bool -> instr_BExp
+| push_boolvar : string -> instr_BExp
+| push_boolfvar : string -> instr_BExp
+| boollt : AExp -> AExp -> instr_BExp
+| boolgt : AExp -> AExp -> instr_BExp
+| boolnot : instr_BExp
+| booland : instr_BExp
+| boolor : instr_BExp.
+
+Definition BExp_Stack := list bool.
+Definition run_instruction_BExp(i : instr_BExp)(env : Env)(stack : BExp_Stack) : BExp_Stack :=
+  match i with
+  | push_bool b => (b :: stack)
+  | push_boolvar b=> (match (env b) with
+                  | vb b => b
+                  | _ => true
+                  end
+                  :: stack)
+  | push_boolfvar b=> (match (env b) with
+                  | fb b => b
+                  | _ => true
+                  end
+                  :: stack)
+  | boollt b1 b2 => ((leb (interpret b1 env)(interpret b2 env)) :: stack)
+  | boolgt b1 b2 => ((leb (interpret b2 env)(interpret b1 env)) :: stack)
+  | boolnot => match stack with
+              | b :: stack' => ((negb b) :: stack')
+              | _ => stack
+              end
+  | booland => match stack with
+              | b1 :: b2 :: stack' => ((andb b2 b1) :: stack')
+              | _ => stack 
+              end
+  | boolor => match stack with
+              | b1 :: b2 :: stack' => ((orb b2 b1) :: stack')
+              | _ => stack
+              end
+ end.  
+
+Compute run_instruction_BExp booland env0 [true; false].
+Compute run_instruction_BExp boolor env0 [true; false]. 
+Compute run_instruction_BExp boolnot env0 [true].  
+
+Fixpoint run_instructionS_BExp(i' : list instr_BExp)(env : Env)(stack : BExp_Stack) : BExp_Stack :=
+  match i' with
+  | [] => stack
+  | i :: i'' => run_instructionS_BExp i'' env (run_instruction_BExp i env stack)
+  end.
+
+Definition pgmm1 := (push_bool false :: push_boolvar "x" :: nil).
+Definition pgmm2 := (push_bool true :: push_boolvar "xx" :: booland :: push_bool false :: push_bool true :: boolnot :: nil).           
+
+Compute run_instructionS_BExp pgmm2 env0 [].
+
+Fixpoint Compile_BExp (e : BExp) : list instr_BExp :=
+  match e with
+  | btrue => [push_bool true]
+  | bfalse => [push_bool false]
+  | boolvar b => [push_boolvar b]
+  | boolfvar b => [push_boolfvar b]
+  | blessthaneq b1 b2 => [boollt b1 b2]
+  | bmorethaneq b1 b2 => [boolgt b1 b2]
+  | band b1 b2 => (Compile_BExp b1) ++ (Compile_BExp b2) ++ [booland]
+  | bor b1 b2 => (Compile_BExp b1) ++ (Compile_BExp b2) ++ [boolor]
+  | bnot b => (Compile_BExp b) ++ [boolnot]
+  end.
+
+Compute Compile_BExp( 10 <=' 3).
+Compute interpretBExp (10 <=' 3) env0.
+
+Lemma soundness_helperBExp :
+forall e env stack is',
+   run_instructionS_BExp (Compile_BExp e ++ is') env stack =
+   run_instructionS_BExp is' env ((interpretBExp e env) :: stack).
+Proof.
+  induction e; intros; simpl; trivial.
+  - rewrite <- app_assoc.
+    rewrite IHe.
+    simpl.
+    reflexivity.
+  - rewrite <- app_assoc.
+    rewrite <- app_assoc.
+    rewrite IHe1.
+    rewrite IHe2.
+    simpl.
+    reflexivity.
+  - rewrite <- app_assoc.
+    rewrite <- app_assoc.
+    rewrite IHe1.
+    rewrite IHe2.
+    simpl.
+    reflexivity.
+Qed.
+
+Theorem soundness_BExp :
+  forall e env,
+    run_instructionS_BExp (Compile_BExp e) env [] =
+    [interpretBExp e env].
+Proof.
+  intros.
+  Check app_nil_r.
+  rewrite <- app_nil_r with (l := (Compile_BExp e)).
+  rewrite soundness_helperBExp.
+  simpl. trivial.
+Qed.
+*)
